@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neverhuman/jankurai-tools-guard/schemas/guard-state.schema.json",
+  "title": "Jankurai guard session state",
+  "description": "The persisted guard-state document written under `.jankurai/guard/state.json` for a guard session. Produced and consumed by the `state` module.",
+  "type": "object",
+  "required": ["repo_id", "mode", "started_at", "backend"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "description": "Schema version of the state document.", "default": "1" },
+    "repo_id": { "type": "string", "description": "Stable identifier of the guarded repository." },
+    "mode": { "type": "string", "enum": ["observe", "enforce", "strict"], "description": "Operating mode of the session." },
+    "started_at": { "type": "string", "format": "date-time", "description": "RFC 3339 timestamp the session started." },
+    "backend": { "type": "string", "enum": ["watcher", "fuse"], "description": "Backend in use." },
+    "quarantined": {
+      "type": "array",
+      "description": "Quarantine index, newest last.",
+      "items": { "$ref": "#/$defs/quarantineEntry" }
+    },
+    "blocked_paths": {
+      "type": "array",
+      "description": "Repo-relative paths currently blocked.",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "quarantineEntry": {
+      "type": "object",
+      "required": ["rel_path", "quarantine_path", "report_path", "blocked_at"],
+      "additionalProperties": false,
+      "properties": {
+        "rel_path": { "type": "string", "description": "Repo-relative path of the rejected candidate." },
+        "quarantine_path": { "type": "string", "description": "Where the rejected bytes were quarantined." },
+        "report_path": { "type": "string", "description": "Where the failure report was written." },
+        "blocked_at": { "type": "string", "format": "date-time", "description": "RFC 3339 timestamp of the block." }
+      }
+    }
+  }
+}

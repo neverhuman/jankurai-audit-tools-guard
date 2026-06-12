@@ -1,0 +1,67 @@
+schema_version = "1.0.0"
+
+# Jankurai tool adoption for jankurai-tools-guard. Each catalog tool that
+# applies to this high-risk Rust crate is declared here with its mode. The
+# matching CI lane (ops/ci/tool-adoption.sh) runs the adopted command and the
+# workflow uploads its evidence artifact, so adoption is CI-backed rather than
+# config-only.
+
+[[tools]]
+id = "audit-ci"
+mode = "auto"
+
+[[tools]]
+id = "proof-routing"
+mode = "auto"
+
+[[tools]]
+id = "proofbind"
+mode = "advisory"
+
+[[tools]]
+id = "proofmark-rust"
+mode = "advisory"
+
+[[tools]]
+id = "copy-code"
+mode = "advisory"
+
+[[tools]]
+id = "security"
+mode = "auto"
+
+[[tools]]
+id = "ci-bad-behavior"
+mode = "advisory"
+
+[[tools]]
+id = "git-bad-behavior"
+mode = "advisory"
+
+[[tools]]
+id = "release-bad-behavior"
+mode = "advisory"
+
+[[tools]]
+id = "contract-drift"
+mode = "auto"
+
+[[tools]]
+id = "rust-witness"
+mode = "auto"
+
+[[tools]]
+id = "authz-matrix"
+mode = "auto"
+
+[[tools]]
+id = "agent-tool-supply"
+mode = "auto"
+
+[[tools]]
+id = "release-readiness"
+mode = "auto"
+
+[[tools]]
+id = "cost-budget"
+mode = "auto"

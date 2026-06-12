@@ -1,0 +1,81 @@
+# Live minimal lane set for jankurai-tools-guard.
+# Every lane command runs in this repo alone, and every required_artifact is
+# produced by that lane's command. There are no sibling-crate lanes.
+
+[[lane]]
+name = "fast"
+command = "just fast"
+purpose = "deterministic fast loop: cargo check + nextest for agent iteration"
+command_id = "lane.fast"
+kind = "validation"
+cost = 5
+rules_covered = ["HLT-001-DEAD-MARKER", "HLT-003-OWNERLESS-PATH", "HLT-004-UNMAPPED-PROOF", "HLT-008-FALSE-GREEN-RISK"]
+required_artifacts = []
+timeout_seconds = 900
+requires_network = false
+destructive = false
+
+[[lane]]
+name = "guard"
+command = "cargo test -p jankurai-guard"
+purpose = "verify the jankurai-guard crate: watcher backend, enforcement (revert/quarantine/poison), PTY injection, transaction state machine, poison generation, and audit client"
+command_id = "lane.guard"
+kind = "validation"
+cost = 8
+rules_covered = ["HLT-001-DEAD-MARKER", "HLT-004-UNMAPPED-PROOF", "HLT-008-FALSE-GREEN-RISK", "HLT-029-RUST-BAD-BEHAVIOR"]
+required_artifacts = []
+timeout_seconds = 900
+requires_network = false
+destructive = false
+
+[[lane]]
+name = "audit"
+command = "just audit"
+purpose = "write .jankurai/repo-score.json and .jankurai/repo-score.md from the jankurai self-audit"
+command_id = "lane.audit"
+kind = "audit"
+cost = 10
+rules_covered = ["HLT-001-DEAD-MARKER", "HLT-003-OWNERLESS-PATH", "HLT-004-UNMAPPED-PROOF", "HLT-008-FALSE-GREEN-RISK"]
+required_artifacts = [".jankurai/repo-score.json", ".jankurai/repo-score.md"]
+timeout_seconds = 900
+requires_network = false
+destructive = false
+
+[[lane]]
+name = "security"
+command = "just security"
+purpose = "secret scanning (gitleaks) plus dependency vulnerability scanning (cargo audit)"
+command_id = "lane.security"
+kind = "security"
+cost = 20
+rules_covered = ["HLT-009-GENERATED-SECURITY", "HLT-010-SECRET-SPRAWL", "HLT-016-SUPPLY-CHAIN-DRIFT", "HLT-020-CI-HARDENING-GAP"]
+required_artifacts = []
+timeout_seconds = 1800
+requires_network = false
+destructive = false
+
+[[lane]]
+name = "full"
+command = "just check"
+purpose = "run format, lint, fast lane, security, and self-audit as the merge gate"
+command_id = "lane.full"
+kind = "release"
+cost = 50
+supersedes = ["fast", "guard", "audit", "security"]
+required_artifacts = [".jankurai/repo-score.json", ".jankurai/repo-score.md"]
+timeout_seconds = 3600
+requires_network = false
+destructive = false
+
+[[lane]]
+name = "versions"
+command = "just versions"
+purpose = "print the declared VERSION so release metadata stays coherent"
+command_id = "lane.versions"
+kind = "validation"
+cost = 2
+rules_covered = ["HLT-025-RELEASE-READINESS-GAP"]
+required_artifacts = []
+timeout_seconds = 120
+requires_network = false
+destructive = false

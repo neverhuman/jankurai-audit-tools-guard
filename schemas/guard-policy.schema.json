@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neverhuman/jankurai-tools-guard/schemas/guard-policy.schema.json",
+  "title": "Jankurai guard policy",
+  "description": "The `agent/guard-policy.toml` contract parsed by the `policy` module. Controls which findings block, debounce timings, the on-block action, and platform hardening tiers.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "default": "1.0.0" },
+    "mode": { "type": "string", "enum": ["observe", "enforce", "strict"], "default": "enforce" },
+    "block_on": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+      "default": ["critical", "high"]
+    },
+    "warn_on": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+      "default": ["medium", "low"]
+    },
+    "debounce_ms": { "type": "integer", "minimum": 0, "default": 150 },
+    "stable_ms": { "type": "integer", "minimum": 0, "default": 75 },
+    "on_fail": { "type": "string", "enum": ["warn", "interrupt", "revert", "poison"], "default": "poison" },
+    "quarantine_new_files": { "type": "boolean", "default": true },
+    "respect_gitignore": { "type": "boolean", "default": true },
+    "audit_scope": { "type": "string", "enum": ["file-only", "file-plus-control"], "default": "file-plus-control" },
+    "fail_closed": { "type": "boolean", "default": true },
+    "max_audit_ms": { "type": "integer", "minimum": 1, "default": 4000 },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extra_excluded_paths": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "hardening": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "linux_landlock": { "type": "boolean", "default": false },
+        "linux_fanotify": { "type": "boolean", "default": false },
+        "macos_endpoint_security": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

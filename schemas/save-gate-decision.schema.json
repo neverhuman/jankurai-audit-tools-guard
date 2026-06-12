@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neverhuman/jankurai-tools-guard/schemas/save-gate-decision.schema.json",
+  "title": "Jankurai save-gate decision",
+  "description": "The `jankurai-save-gate/1` JSON contract the guard parses from the audit engine for a single candidate file write. Produced by `audit_client` and consumed by the feedback and transaction layers.",
+  "type": "object",
+  "required": ["schema", "verdict"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "jankurai-save-gate/1",
+      "description": "Schema discriminator."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "advisory", "block"],
+      "description": "Overall verdict; `block` forbids the write from landing."
+    },
+    "exit_code": { "type": "integer", "description": "Exit code the audit engine reported." },
+    "path": { "type": "string", "description": "Repo-relative path that was audited." },
+    "mode": { "type": "string", "description": "Audit mode, e.g. `save-gate`." },
+    "candidate_score": { "type": ["integer", "null"], "description": "The candidate's score." },
+    "baseline_score": { "type": ["integer", "null"], "description": "Baseline score compared against." },
+    "summary": { "type": "string", "description": "One-line human summary." },
+    "blocking": { "$ref": "#/$defs/blockingFindings" },
+    "advisory": { "$ref": "#/$defs/advisoryFindings" },
+    "preexisting_findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "rerun_command": { "type": "string", "description": "Command to re-run the audit after fixing." }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", ""] },
+        "category": { "type": "string" },
+        "path": { "type": "string" },
+        "problem": { "type": "string" },
+        "agent_fix": { "type": "string" },
+        "line": { "type": ["integer", "null"] },
+        "rule_id": { "type": "string" },
+        "check_id": { "type": "string" },
+        "evidence": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "blockingFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "new_hard_findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "worsened_findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+        "always_block_findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      }
+    },
+    "advisoryFindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "new_soft_findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      }
+    }
+  }
+}
