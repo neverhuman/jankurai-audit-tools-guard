@@ -19,7 +19,7 @@ use crate::poison::{self, PoisonState};
 use crate::policy::GuardPolicy;
 use crate::transaction::CommitBoundary;
 use crate::{commit, GuardError};
-use fuser::{FileAttr, FileType};
+use fuser::{Errno, FileAttr, FileType, INodeNo};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
@@ -84,7 +84,7 @@ impl GuardFs {
             FileType::RegularFile
         };
         FileAttr {
-            ino,
+            ino: INodeNo(ino),
             size: meta.len(),
             blocks: meta.blocks(),
             atime: SystemTime::UNIX_EPOCH + Duration::from_secs(meta.atime().max(0) as u64),
@@ -110,7 +110,7 @@ impl GuardFs {
         let uid = unsafe { libc::getuid() };
         let gid = unsafe { libc::getgid() };
         FileAttr {
-            ino,
+            ino: INodeNo(ino),
             size,
             blocks: size.div_ceil(512),
             atime: SystemTime::now(),
@@ -148,7 +148,7 @@ impl GuardFs {
         if errno == 0 {
             reply.ok();
         } else {
-            reply.error(errno);
+            reply.error(Errno::from_i32(errno));
         }
     }
 

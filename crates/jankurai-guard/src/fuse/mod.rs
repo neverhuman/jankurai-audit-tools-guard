@@ -56,11 +56,12 @@ mod linux_impl {
     ) -> Result<FuseSession, GuardError> {
         layout.ensure_dirs()?;
         let fs = GuardFs::new(layout.clone(), policy, audit, bus)?;
-        let options = vec![
+        let mut config = fuser::Config::default();
+        config.mount_options = vec![
             fuser::MountOption::FSName("jankurai-guard".to_string()),
             fuser::MountOption::DefaultPermissions,
         ];
-        let session = fuser::spawn_mount2(fs, &layout.mount, &options)
+        let session = fuser::spawn_mount2(fs, &layout.mount, &config)
             .map_err(|e| GuardError::FuseUnavailable(format!("mount failed: {e}")))?;
         Ok(FuseSession { session })
     }

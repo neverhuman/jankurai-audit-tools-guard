@@ -11,48 +11,55 @@
 use super::filesystem::{GuardFs, TTL};
 use super::handles::OpenHandle;
 use crate::transaction::{CommitMachine, FsEvent};
-use fuser::{FileType, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, ReplyOpen};
+use fuser::{
+    Errno, FileHandle, FileType, FopenFlags, Generation, INodeNo, ReplyAttr, ReplyData,
+    ReplyDirectory, ReplyEntry, ReplyOpen,
+};
 use std::ffi::OsStr;
 
 impl GuardFs {
     /// Handles the `lookup` FUSE call.
-    pub(super) fn handle_lookup(&mut self, parent: u64, name: &OsStr, reply: ReplyEntry) {
+    pub(super) fn handle_lookup(&self, parent: u64, name: &OsStr, reply: ReplyEntry) {
         let mut inner = self.inner.lock().expect("guard fs mutex");
         let parent_rel = match inner.inodes.path_for(parent) {
             Some(rel) => rel.to_path_buf(),
             None => {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
                 return;
             }
         };
         let rel = parent_rel.join(name);
         if let Some(view) = inner.poison.get(&rel) {
             let ino = inner.inodes.lookup(&rel);
-            reply.entry(&TTL, &GuardFs::overlay_attr(ino, view.len() as u64), 0);
+            reply.entry(
+                &TTL,
+                &GuardFs::overlay_attr(ino, view.len() as u64),
+                Generation(0),
+            );
             return;
         }
         match std::fs::symlink_metadata(self.backing_path(&rel)) {
             Ok(meta) => {
                 let ino = inner.inodes.lookup(&rel);
-                reply.entry(&TTL, &GuardFs::attr_from_meta(ino, &meta), 0);
+                reply.entry(&TTL, &GuardFs::attr_from_meta(ino, &meta), Generation(0));
             }
-            Err(_) => reply.error(libc::ENOENT),
+            Err(_) => reply.error(Errno::ENOENT),
         }
     }
 
     /// Handles the `forget` FUSE call.
-    pub(super) fn handle_forget(&mut self, ino: u64, nlookup: u64) {
+    pub(super) fn handle_forget(&self, ino: u64, nlookup: u64) {
         let mut inner = self.inner.lock().expect("guard fs mutex");
         inner.inodes.forget(ino, nlookup);
     }
 
     /// Handles the `getattr` FUSE call.
-    pub(super) fn handle_getattr(&mut self, ino: u64, reply: ReplyAttr) {
+    pub(super) fn handle_getattr(&self, ino: u64, reply: ReplyAttr) {
         let inner = self.inner.lock().expect("guard fs mutex");
         let rel = match inner.inodes.path_for(ino) {
             Some(rel) => rel.to_path_buf(),
             None => {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
                 return;
             }
         };
@@ -62,17 +69,17 @@ impl GuardFs {
         }
         match std::fs::symlink_metadata(self.backing_path(&rel)) {
             Ok(meta) => reply.attr(&TTL, &GuardFs::attr_from_meta(ino, &meta)),
-            Err(_) => reply.error(libc::ENOENT),
+            Err(_) => reply.error(Errno::ENOENT),
         }
     }
 
     /// Handles the `open` FUSE call.
-    pub(super) fn handle_open(&mut self, ino: u64, flags: i32, reply: ReplyOpen) {
+    pub(super) fn handle_open(&self, ino: u64, flags: i32, reply: ReplyOpen) {
         let mut inner = self.inner.lock().expect("guard fs mutex");
         let rel = match inner.inodes.path_for(ino) {
             Some(rel) => rel.to_path_buf(),
             None => {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
                 return;
             }
         };
@@ -89,24 +96,24 @@ impl GuardFs {
                 machine.feed(FsEvent::Open { trunc: true });
             }
             let fh = inner.handles.insert(OpenHandle::Write { machine });
-            reply.opened(fh, 0);
+            reply.opened(FileHandle(fh), FopenFlags::empty());
         } else {
-            if self.backing_path(&rel).exists() {
+            if self.backing_path(&rel).exists() || inner.poison.get(&rel).is_some() {
                 let fh = inner.handles.insert(OpenHandle::Read);
-                reply.opened(fh, 0);
+                reply.opened(FileHandle(fh), FopenFlags::empty());
             } else {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
             }
         }
     }
 
     /// Handles the `read` FUSE call.
-    pub(super) fn handle_read(&mut self, ino: u64, offset: i64, size: u32, reply: ReplyData) {
+    pub(super) fn handle_read(&self, ino: u64, offset: u64, size: u32, reply: ReplyData) {
         let inner = self.inner.lock().expect("guard fs mutex");
         let rel = match inner.inodes.path_for(ino) {
             Some(rel) => rel.to_path_buf(),
             None => {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
                 return;
             }
         };
@@ -115,23 +122,23 @@ impl GuardFs {
             None => match std::fs::read(self.backing_path(&rel)) {
                 Ok(bytes) => bytes,
                 Err(_) => {
-                    reply.error(libc::EIO);
+                    reply.error(Errno::EIO);
                     return;
                 }
             },
         };
-        let start = (offset.max(0) as usize).min(bytes.len());
+        let start = (offset as usize).min(bytes.len());
         let end = (start + size as usize).min(bytes.len());
         reply.data(&bytes[start..end]);
     }
 
     /// Handles the `readdir` FUSE call.
-    pub(super) fn handle_readdir(&mut self, ino: u64, offset: i64, mut reply: ReplyDirectory) {
+    pub(super) fn handle_readdir(&self, ino: u64, offset: u64, mut reply: ReplyDirectory) {
         let inner = self.inner.lock().expect("guard fs mutex");
         let rel = match inner.inodes.path_for(ino) {
             Some(rel) => rel.to_path_buf(),
             None => {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
                 return;
             }
         };
@@ -151,7 +158,7 @@ impl GuardFs {
             }
         }
         for (idx, (kind, name)) in entries.into_iter().enumerate().skip(offset as usize) {
-            if reply.add(ino, (idx + 1) as i64, kind, &name) {
+            if reply.add(INodeNo(ino), (idx + 1) as u64, kind, &name) {
                 break;
             }
         }
@@ -159,18 +166,18 @@ impl GuardFs {
     }
 
     /// Handles the `readlink` FUSE call.
-    pub(super) fn handle_readlink(&mut self, ino: u64, reply: ReplyData) {
+    pub(super) fn handle_readlink(&self, ino: u64, reply: ReplyData) {
         let inner = self.inner.lock().expect("guard fs mutex");
         let rel = match inner.inodes.path_for(ino) {
             Some(rel) => rel.to_path_buf(),
             None => {
-                reply.error(libc::ENOENT);
+                reply.error(Errno::ENOENT);
                 return;
             }
         };
         match std::fs::read_link(self.backing_path(&rel)) {
             Ok(target) => reply.data(target.to_string_lossy().as_bytes()),
-            Err(_) => reply.error(libc::EINVAL),
+            Err(_) => reply.error(Errno::EINVAL),
         }
     }
 }

@@ -21,7 +21,7 @@ gitleaks detect --source . --no-banner --redact
 
 # 2. Dependency vulnerability advisories.
 step "cargo-audit"
-cargo audit
+cargo audit --no-fetch
 
 # 3. Dependency policy / license + banned-crate review.
 step "cargo-deny"
@@ -30,12 +30,18 @@ cargo deny check advisories bans sources
 # 4. SBOM (CycloneDX) generated from the locked dependency graph, plus syft as a
 #    second-source bill of materials for provenance cross-checking.
 step "sbom"
-cargo cyclonedx --format json --override-filename sbom
-syft dir:. -o cyclonedx-json=target/sbom-syft.json
+mkdir -p target/jankurai/security
+cargo cyclonedx --manifest-path crates/jankurai-guard/Cargo.toml --all-features \
+  --format json --override-filename cargo-sbom
+mv crates/jankurai-guard/cargo-sbom.json target/jankurai/security/cargo-sbom.json
+syft dir:. -o cyclonedx-json=target/jankurai/security/sbom-syft.json
+grype sbom:target/jankurai/security/sbom-syft.json --fail-on high
 
-# 5. Supply-chain provenance attestation over the release artifacts.
+# 5. Deterministic provenance inputs for the separately signed release lane.
 step "provenance"
-cosign attest --predicate target/sbom-syft.json --type cyclonedx --yes . || true
+sha256sum Cargo.lock target/jankurai/security/cargo-sbom.json \
+  target/jankurai/security/sbom-syft.json \
+  > target/jankurai/security/provenance-inputs.sha256
 
 # 6. Workflow linting so the CI supply chain itself stays pinned and safe.
 step "workflow-lint"

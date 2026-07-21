@@ -13,6 +13,7 @@ use jankurai_guard::fuse;
 use jankurai_guard::layout::GuardLayout;
 use jankurai_guard::policy::GuardPolicy;
 use jankurai_guard::AuditClient;
+use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -62,9 +63,13 @@ fn blocked_write_returns_eacces_and_leaves_backing_untouched() {
 
     let session = fuse::mount(layout.clone(), GuardPolicy::default(), audit, bus).unwrap();
     let path = layout.mount.join("blocked.rs");
-    // The write should fail with EACCES once the commit boundary audits.
-    let err = std::fs::write(&path, b"fn main() { bad() }\n").unwrap_err();
+    let mut file = std::fs::File::create(&path).unwrap();
+    file.write_all(b"fn main() { bad() }\n").unwrap();
+    // Rust's `File` drop cannot report a FUSE release error, so durable callers
+    // use the explicit fsync boundary where the kernel can return EACCES.
+    let err = file.sync_all().unwrap_err();
     assert_eq!(err.raw_os_error(), Some(libc::EACCES));
+    drop(file);
 
     // The backing store was never touched.
     assert!(!layout.backing.join("blocked.rs").exists());
@@ -87,7 +92,13 @@ fn poisoned_path_reads_back_the_poison_overlay() {
 
     let session = fuse::mount(layout.clone(), GuardPolicy::default(), audit, bus).unwrap();
     let path = layout.mount.join("poisoned.rs");
-    let _ = std::fs::write(&path, b"rejected bytes\n");
+    let mut file = std::fs::File::create(&path).unwrap();
+    file.write_all(b"rejected bytes\n").unwrap();
+    assert_eq!(
+        file.sync_all().unwrap_err().raw_os_error(),
+        Some(libc::EACCES)
+    );
+    drop(file);
 
     // After the block the path serves the poison overlay through the mount.
     let view = std::fs::read(&path).unwrap();
