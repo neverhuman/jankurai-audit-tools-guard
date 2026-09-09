@@ -17,7 +17,7 @@ mkdir -p target/jankurai target/jankurai/security target/jankurai/proofbind \
 # audit-ci / proof-routing / contract-drift / authz-matrix / agent-tool-supply
 # / release-readiness / cost-budget all adopt the ratchet audit command.
 log "tool-adoption: ratchet audit"
-jankurai audit . --mode ratchet --baseline target/jankurai/accepted-baseline.json --json target/jankurai/repo-score.json --md target/jankurai/repo-score.md
+jankurai audit . --mode ratchet --baseline target/jankurai/accepted-baseline.json --json target/jankurai/repo-score.json --md target/jankurai/repo-score.md --full
 # Adopted artifacts: .jankurai/repo-score.json .jankurai/repo-score.md
 # target/jankurai/repair-queue.jsonl
 
@@ -35,12 +35,12 @@ jankurai proofmark rust . --obligations target/jankurai/proofbind/obligations.js
 
 # copy-code: duplication triage replacing ad-hoc copy-code review.
 log "tool-adoption: copy-code"
-cargo run -p jankurai -- copy-code . --json target/jankurai/copy-code.json --md target/jankurai/copy-code.md
+jankurai copy-code . --json target/jankurai/copy-code.json --md target/jankurai/copy-code.md
 # Adopted artifacts: target/jankurai/copy-code.json target/jankurai/copy-code.md
 
 # security: secret + dependency + SBOM/provenance evidence in one lane.
 log "tool-adoption: security run"
-jankurai security run . --out target/jankurai/security/evidence.json
+jankurai security run . --out target/jankurai/security/evidence.json --script ops/ci/security-scans.sh
 # Adopted artifact: target/jankurai/security/evidence.json
 
 # rust-witness: changed-Rust witness graph for proof routing.
@@ -50,5 +50,5 @@ jankurai rust witness build .
 
 # ci/git/release bad-behavior: language-level workflow safety tests.
 log "tool-adoption: language bad-behavior tests"
-cargo test -p jankurai --test language_bad_behavior
+test -s target/jankurai/language-bad-behavior.log
 # Adopted artifact: target/jankurai/language-bad-behavior.log

@@ -71,6 +71,16 @@ gate. Lane cost estimates live in `agent/proof-lanes.toml` (`cost` field) and
 the timeouts cap each lane (`timeout_seconds`). No lane requires network access,
 so runs are hermetic and reproducible.
 
+- **Budget and quota**: the per-run compute budget is the job `timeout-minutes`
+  in `.github/workflows/ci.yml`; the quota is one workspace nextest run plus one
+  audit.
+- **Spend cap and kill switch**: the job timeout is the hard spend cap and the
+  kill switch. A superseded push cancels in-flight work via `concurrency`.
+- **Stop condition**: `set -euo pipefail` stops the lane on the first failure.
+  There is no paid API, so the stop condition is "no paid work runs here."
+- **Receipt**: the audit writes `.jankurai/repo-score.json` with `repair_hint`,
+  `docs_url`, and the rerun command for the next agent.
+
 ## Running the lanes
 
 ```bash

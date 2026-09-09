@@ -21,7 +21,7 @@ gitleaks detect --source . --no-banner --redact
 
 # 2. Dependency vulnerability advisories.
 step "cargo-audit"
-cargo audit --no-fetch
+cargo audit
 
 # 3. Dependency policy / license + banned-crate review.
 step "cargo-deny"
