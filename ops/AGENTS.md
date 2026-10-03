@@ -13,16 +13,14 @@ pinned CI lane scripts and the git-hook entrypoints.
 
 ## Forbidden
 
-- Do not inline CI commands into `.github/workflows/*.yml`; every workflow step
-  must delegate to `bash ops/ci/<lane>.sh` so local runs and CI never drift
-  (HLT-042 CI-local parity).
-- Do not unpin a third-party GitHub Action; every `uses:` is pinned to a full
-  40-character commit SHA.
+- Do not add GitHub Actions workflows; GitHub is a publishing mirror only. CI
+  runs on the forge and our hosts and must delegate to `bash ops/ci/<lane>.sh`
+  so local runs and CI never drift (HLT-042 CI-local parity).
 - Do not hand-edit anything under `target/` (a generated zone).
 
 ## Proof lane
 
-Changes here route to the security lane and a workflow lint:
+Changes here route to the security lane and the quality gates:
 
 ```bash
 bash scripts/ci-local.sh security

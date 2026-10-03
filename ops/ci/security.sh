@@ -6,5 +6,5 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_ROOT"
 
-log "security lane: gitleaks + cargo audit + SBOM + workflow lint"
+log "security lane: gitleaks + cargo audit + SBOM"
 bash tools/security-lane.sh

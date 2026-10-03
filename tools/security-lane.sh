@@ -2,9 +2,9 @@
 # Canonical security lane wrapper for jankurai-tools-guard.
 #
 # Single shell entrypoint for the high-risk security posture: secret scanning,
-# dependency advisories, software bill of materials (SBOM), provenance, and
-# workflow linting. The Justfile `security` lane and CI both call this script so
-# local runs and GitHub Actions execute the exact same checks. Each step emits a
+# dependency advisories, software bill of materials (SBOM), and provenance.
+# The Justfile `security` lane and CI both call this script so local runs and
+# the forge-hosted CI execute the exact same checks. Each step emits a
 # `jankurai-security-step=` JSON line so the evidence file is built from shell
 # without a Python runtime.
 set -euo pipefail
@@ -42,8 +42,3 @@ step "provenance"
 sha256sum Cargo.lock target/jankurai/security/cargo-sbom.json \
   target/jankurai/security/sbom-syft.json \
   > target/jankurai/security/provenance-inputs.sha256
-
-# 6. Workflow linting so the CI supply chain itself stays pinned and safe.
-step "workflow-lint"
-actionlint
-zizmor .github/workflows

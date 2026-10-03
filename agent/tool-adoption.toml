@@ -3,7 +3,7 @@ schema_version = "1.0.0"
 # Jankurai tool adoption for jankurai-tools-guard. Each catalog tool that
 # applies to this high-risk Rust crate is declared here with its mode. The
 # matching CI lane (ops/ci/tool-adoption.sh) runs the adopted command and the
-# workflow uploads its evidence artifact, so adoption is CI-backed rather than
+# CI host keeps its evidence artifact, so adoption is CI-backed rather than
 # config-only.
 
 [[tools]]

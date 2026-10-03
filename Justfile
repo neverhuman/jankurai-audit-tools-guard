@@ -47,11 +47,11 @@ guard:
 contract-drift:
     cargo public-api --package jankurai-guard --deny changed
 
-# Security lane: secret scanning, dependency advisories, SBOM/provenance, and
-# workflow linting, all via the canonical tools/security-lane.sh wrapper.
+# Security lane: secret scanning, dependency advisories, and SBOM/provenance,
+# all via the canonical tools/security-lane.sh wrapper.
 # gitleaks scans for committed secrets; cargo audit and cargo deny check the Rust
 # dependency tree; cargo cyclonedx + syft emit the SBOM; cosign records
-# provenance; actionlint and zizmor lint the workflows.
+# provenance.
 security:
     bash tools/security-lane.sh
 
