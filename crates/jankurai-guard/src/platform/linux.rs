@@ -3,8 +3,6 @@
 //! is built in this release, so these functions honestly report the tier is not
 //! active — they are real, callable functions, not stubs that pretend.
 
-#![cfg(target_os = "linux")]
-
 use crate::platform::{HardeningStatus, HardeningTier};
 
 /// Attempts to apply Landlock path restrictions. Without the `landlock` feature

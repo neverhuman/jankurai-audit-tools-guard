@@ -3,8 +3,6 @@
 //! This function is a real, callable probe that honestly reports Endpoint
 //! Security is not configured rather than pretending the tier is active.
 
-#![cfg(target_os = "macos")]
-
 use crate::platform::{HardeningStatus, HardeningTier};
 
 /// Probes for an active Jankurai Endpoint Security extension and reports the

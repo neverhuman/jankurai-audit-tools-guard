@@ -8,4 +8,4 @@ cd "$REPO_ROOT"
 
 log "fast lane: cargo check + nextest"
 cargo check --workspace --locked
-cargo nextest run --workspace
+cargo nextest run --workspace --locked
