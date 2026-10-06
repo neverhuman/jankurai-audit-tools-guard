@@ -7,6 +7,12 @@ The authoritative version string lives in [`VERSION`](VERSION).
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-10-06
+
+### Changed
+
+- `agent/standard-version.toml` declares `auditor_version = "1.7.3"` (was `1.6.0`), the family auditor pin the hub's `validate-family` checks for the 1.7.3 release.
+
 ### Removed
 
 - GitHub Actions workflows and the GitHub-only `ops/ci/aggregate.sh` and
